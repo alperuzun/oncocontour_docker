@@ -1,74 +1,86 @@
-What This Tool Does
+# OncoContour
 
-This web application helps researchers and health professionals visualize cancer statistics on interactive maps. Just upload your data files and the system will automatically:
+We present OncoContour: a geographic cancer data visualization platform. OncoContour analyzes and maps cancer incidence data across regions to reveal spatial patterns and demographic correlations. This provides researchers and public health professionals with actionable insights to inform policy decisions and targeted interventions. The platform offers interactive heatmaps, demographic breakdowns, temporal trend visualizations, and comparative analyses.
 
-Match your city/state data with map coordinates
-Create color-coded heatmaps showing cancer rates
-Generate population distribution maps
-Produce demographic charts (if you upload that data)
-Getting Started
+## Table of Contents
 
-What You'll Need
+- [Installation](#installation)
+  - [Application Download](#application-download)
+  - [Setup](#setup)
+- [Getting Started](#getting-started)
+  - [Running the Application](#running-the-application)
+  - [Data Formats](#data-formats)
+- [Navigation](#navigation)
+  - [Uploading Data](#uploading-data)
+  - [Generating Visualizations](#generating-visualizations)
+  - [Exploring Results](#exploring-results)
+- [Authors](#authors)
+- [Contact](#contact)
 
-A computer with Python 3.7 or newer
-The data files you want to visualize
-Basic knowledge of CSV files
-Setup Instructions
+## Installation
 
-Download the software files
-Get all the Python files (.py) from the project and save them in a new folder.
-Get the city database
-Download "uscities.csv" from simplemaps.com/data/us-cities
-Save it in the same folder as the Python files.
-Prepare the system
-Open Command Prompt (Windows) or Terminal (Mac) and type:
-pip install flask pandas folium plotly
-python census_processor.py
-Start the program
-Type this command to launch the application:
-python app.py
-How To Use It
+### Application Download
 
-Open the website
-After starting the program, open your web browser and go to:
+To install OncoContour, clone the repository:
+
+git clone https://github.com/alperuzun/cancermaps.git
+
+### Setup
+
+1. Ensure you have Python 3.8+ installed
+2. Navigate to the project directory: cd cancermaps
+3. Install required dependencies: pip install -r requirements.txt
+4. Start the application: python app.py
+
+## Getting Started
+
+### Running the Application
+
+After installation, the application will be accessible at: 
 http://localhost:5000
-Prepare your data files
-Your cancer data must be a CSV file with this exact format:
-City,State,CancerType1,CancerType2,Year1,Year2,...
-Providence,RI,11,50,40,30,47,45
-State must use official 2-letter codes (RI, MA, CA, etc.)
-Upload your files
-Click "Import" at the top
-Click "Choose File" under "Cancer Statistics Data"
-Select your prepared CSV file
-Click "Upload Cancer Data"
-Create visualizations
-Click the "Generate Visualization" button
-Wait a moment while the system creates your maps
-View your results
-The system will show:
-A population map (darker areas = more people)
-A cancer incidence map (hotter colors = higher rates)
-Additional charts if you uploaded demographic data
-Troubleshooting Help
 
-If something isn't working:
+### Data Formats
 
-Check your CSV file format
-First two columns must be "City,State" (exactly like that)
-All states must use valid 2-letter codes
-No blank rows at the top
-Common error messages
-"Processed census data not found":
-Make sure you ran python census_processor.py and see the "setup" section above
-"Invalid file format":
-Check your CSV follows the exact required format
-Blank or missing maps
-The cities in your data must exist in the census database
-Try larger cities first to test (they're more likely to be in the system)
-Tips for Best Results
+Follow the instructions for uploading files in the 'Import' section.
+Feel free to reference mock data that is included in the repository to 
+understand proper formatting.
 
-Start with a small test file (5-10 cities) to make sure everything works
-The system automatically skips cities it can't find (no error messages)
-For best maps, include at least 20-30 cities in your data
-Chrome or Firefox work best for viewing the visualizations
+## Navigation
+
+### Uploading Data
+
+1. Click "Import Data" from the home screen
+2. Select file type (Cancer, Demographics, or Age/Sex)
+3. Choose your CSV file and click "Upload"
+4. Click "Generate Visualization" when ready
+
+### Generating Visualizations
+
+OncoContour automatically generates:
+
+Geographic heatmaps
+Demographic breakdowns
+Temporal trend analyses
+Comparative visualizations
+
+### Exploring Results
+
+Interactive features include:
+
+Hover for detailed statistics
+Click to filter data
+Navigation between views
+Data/image downloads
+
+## Authors
+
+This project was developed by Alper Uzun and Daniel White at The Warren Alpert 
+Medical School of Brown University.
+
+## Contact
+
+For questions or support, please contact:
+- Dr. Alper Uzun (alper_uzun@brown.edu)
+- Daniel White (daniel_white@brown.edu)
+
+Visit our lab website: https://sites.brown.edu/gmilab/
