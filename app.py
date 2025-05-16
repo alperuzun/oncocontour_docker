@@ -9,7 +9,7 @@ import base64
 from io import BytesIO
 import os
 import re
-import cancermaps_v12_4 as custom_cancer_map
+import import_data as custom_cancer_map
 
 app = Flask(__name__)
 
