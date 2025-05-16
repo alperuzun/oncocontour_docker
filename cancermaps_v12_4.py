@@ -10,18 +10,6 @@ import matplotlib.pyplot as plt
 import base64
 from io import BytesIO
 
-import pandas as pd
-import folium
-from folium.plugins import HeatMap
-import plotly.graph_objs as go
-import plotly.io as pio
-import os
-import numpy as np
-import json
-import matplotlib.pyplot as plt
-import base64
-from io import BytesIO
-
 def generate_visualization(uploads_folder="uploads"):
     """Generate visualizations based on uploaded data files"""
     try:
