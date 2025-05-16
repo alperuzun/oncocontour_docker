@@ -312,7 +312,7 @@ landing_page_html = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cancer Research Data Portal</title>
+    <title>OncoContour - Cancer Research Data Portal</title>
     <style>
         body {
             font-family: 'Roboto', Arial, sans-serif;
@@ -325,11 +325,29 @@ landing_page_html = """
             max-width: 1200px;
             margin: 0 auto;
         }
+        .header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .brand-name {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0;
+            color: #e4e4eb;
+        }
+        .tagline {
+            font-size: 1.2rem;
+            color: #aaa;
+            margin-top: 5px;
+        }
         .nav-buttons {
             display: flex;
             justify-content: center;
             gap: 20px;
-            margin-bottom: 20px;
+            margin: 30px 0;
         }
         .button {
             background-color: #444e69;
@@ -344,6 +362,15 @@ landing_page_html = """
         }
         .button:hover {
             background-color: #575f7f;
+        }
+        .logo-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .logo {
+            width: 160px;
+            height: 160px;
+            margin-bottom: 15px;
         }
         .iframe-container {
             width: 45%;
@@ -366,10 +393,30 @@ landing_page_html = """
             border: none;
             pointer-events: none;
         }
+        .section-title {
+            margin-top: 40px;
+            border-bottom: 2px solid #444e69;
+            padding-bottom: 10px;
+        }
+        .footer {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #aaa;
+            padding: 20px 0;
+            border-top: 1px solid #444e69;
+        }
         @media (max-width: 768px) {
             .iframe-container {
                 width: 90%;
                 height: 200px;
+            }
+            .logo {
+                width: 120px;
+                height: 120px;
+            }
+            .brand-name {
+                font-size: 2rem;
             }
         }
     </style>
@@ -378,20 +425,29 @@ landing_page_html = """
     <div class="container">
         <div class="nav-buttons">
             <button class="button" onclick="navigateTo('/')">Home</button>
-            <button class="button" onclick="navigateTo('/import')">Import</button>
+            <button class="button" onclick="navigateTo('/import')">Import Data</button>
+        </div>
+        
+        <div class="logo-container">
+            <img src="/OncoContour.png" alt="OncoContour Logo" class="logo">
+            <p class="tagline">Geographic Visualization of Cancer Statistics</p>
         </div>
 
-        <h1>Region Specific Cancer Mapping</h1>
-
-        <p>Click on a section to view it:</p>
+        <h2 class="section-title">Region Specific Cancer Mapping</h2>
+        <p>Click on a visualization to view it in full screen:</p>
+        
         <div class="iframe-container" onclick="navigateTo('/rhode_island_cancer_map_v12.1.html')">
-            <iframe src="rhode_island_cancer_map_v12.1.html" title="Population Map"></iframe>
+            <iframe src="rhode_island_cancer_map_v12.1.html" title="Population Distribution"></iframe>
         </div>
         <div class="iframe-container" onclick="navigateTo('/rhode_island_cancer_map_v12.html')">
-            <iframe src="rhode_island_cancer_map_v12.html" title="Cancer Map"></iframe>
+            <iframe src="rhode_island_cancer_map_v12.html" title="Cancer Incidence Map"></iframe>
         </div>
 
         <div id="visualization"></div>
+        
+        <div class="footer">
+            <p>© 2025 OncoContour - Geospatial Cancer Analytics</p>
+        </div>
     </div>
 
     <script>
