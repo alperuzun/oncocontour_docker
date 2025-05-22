@@ -1,4 +1,5 @@
 # OncoContour
+<img src="https://github.com/alperuzun/cancermaps/blob/main/OncoContour.png" alt="Page 1 Image" height= 240 align = "left" >
 
 We present OncoContour: a geographic cancer data visualization platform. OncoContour analyzes and maps cancer incidence data across regions to reveal spatial patterns and demographic correlations. This provides researchers and public health professionals with actionable insights to inform policy decisions and targeted interventions. The platform offers interactive heatmaps, demographic breakdowns, temporal trend visualizations, and comparative analyses.
 
