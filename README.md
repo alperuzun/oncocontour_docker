@@ -3,6 +3,7 @@
 
 
 # OncoContour
+
 We present OncoContour: a geographic cancer data visualization platform. OncoContour analyzes and maps cancer incidence data across regions to reveal spatial patterns and demographic correlations. This provides researchers and public health professionals with actionable insights to inform policy decisions and targeted interventions. The platform offers interactive heatmaps, demographic breakdowns, temporal trend visualizations, and comparative analyses.
 
 ## Table of Contents
@@ -25,22 +26,30 @@ We present OncoContour: a geographic cancer data visualization platform. OncoCon
 ### Application Download
 
 To install OncoContour, clone the repository:
+1. Click the green "Code" button 
+2. From the dropdown menu, click "Download ZIP"
+3. Go to your Downloads folder, find the file named cancermaps-main.zip 
+(if it appears as a folder instead of a ZIP, move to Setup)
+4. Double-click it to unzip the files.
+5. A new folder named cancermaps-main will appear — this is the main project folder.
 
 git clone https://github.com/alperuzun/cancermaps.git
 
 ### Setup
 
-1. Ensure you have Python 3.8+ installed
-2. Navigate to the project directory: cd cancermaps
-3. Install required dependencies: pip install -r requirements.txt
-4. Start the application: python app.py
+1. Ensure you have Python 3.8+ installed (verify by typing python --version and 
+pressing enter in Terminal)
+2. Navigate to the project directory using Terminal, type "cd ", then drag and
+drop the cancermaps-main folder into the Terminal window and press enter
+3. Install required dependencies: type "pip install -r requirements.txt" into 
+Terminal, then press enter
+4. Start the application: type "python3 app.py" into Terminal, then press enter
+5. You should see something similar to "* Running on http://127.0.0.1:5000"
+6. Copy the "http://127.0.0.1:5000" portion and paste it into the search bar
+of any web browser (Safari, Google Chrome, etc.)
+7. Now you are all set! The application should appear.
 
 ## Getting Started
-
-### Running the Application
-
-After installation, the application will be accessible at: 
-http://localhost:5000
 
 ### Data Formats
 
