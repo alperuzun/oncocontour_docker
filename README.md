@@ -31,23 +31,30 @@ To install OncoContour, clone the repository:
 3. Go to your Downloads folder, find the file named cancermaps-main.zip 
 (if it appears as a folder instead of a ZIP, move to Setup)
 4. Double-click it to unzip the files.
-5. A new folder named cancermaps-main will appear — this is the main project folder.
+5. A new folder named cancermaps-main will appear â€" this is the main project folder.
 
 git clone https://github.com/alperuzun/cancermaps.git
 
 ### Setup
 
-1. Ensure you have Python 3.8+ installed (verify by typing python --version and 
-pressing enter in Terminal)
-2. Navigate to the project directory using Terminal, type "cd ", then drag and
-drop the cancermaps-main folder into the Terminal window and press enter
-3. Install required dependencies: type "pip install -r requirements.txt" into 
-Terminal, then press enter
-4. Start the application: type "python3 app.py" into Terminal, then press enter
-5. You should see something similar to "* Running on http://127.0.0.1:5000"
-6. Copy the "http://127.0.0.1:5000" portion and paste it into the search bar
-of any web browser (Safari, Google Chrome, etc.)
+1. Install Docker Desktop from https://www.docker.com/products/docker-desktop 
+(download for Mac or Windows), then open Docker Desktop and wait until it shows 
+"Docker is running"
+2. Open Terminal (Mac: press Cmd+Space, type "Terminal", press Enter) or Command 
+Prompt (Windows: press Win+R, type "cmd", press Enter)
+3. Navigate to the project directory by typing "cd ", then drag and drop the 
+cancermaps-main folder into the Terminal/Command Prompt window and press Enter
+4. Make the script executable and run it:
+   - Mac/Linux: type "chmod +x run.sh" and press Enter, then type "./run.sh" 
+   and press Enter
+   - Windows: type "bash run.sh" and press Enter
+5. Wait 30-60 seconds. You should see "✅ App is live at: http://localhost:8080"
+6. Open any web browser (Safari, Chrome, Firefox, etc.) and go to 
+"http://localhost:8080" 
 7. Now you are all set! The application should appear.
+
+To stop the application when finished, type "docker stop cancer-map-app" and 
+press Enter. To run again later, repeat steps 2-6.
 
 ## Getting Started
 
