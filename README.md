@@ -31,7 +31,8 @@ To install OncoContour, clone the repository:
 3. Go to your Downloads folder, find the file named cancermaps-main.zip 
 (if it appears as a folder instead of a ZIP, move to Setup)
 4. Double-click it to unzip the files.
-5. A new folder named cancermaps-main will appear â€" this is the main project folder.
+5. A new folder named "oncocontour_docker-main" will appear, this is the main 
+project folder.
 
 git clone https://github.com/alperuzun/cancermaps.git
 
