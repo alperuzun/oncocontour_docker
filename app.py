@@ -35,6 +35,163 @@ def clear_uploads_folder():
         except Exception as e:
             print(f"Error deleting file {file_path}: {e}")
 
+# Landing page HTML
+landing_page_html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OncoContour - Cancer Research Data Portal</title>
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1e1e2f;
+            color: #e4e4eb;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .brand-name {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0;
+            color: #e4e4eb;
+        }
+        .tagline {
+            font-size: 1.2rem;
+            color: #aaa;
+            margin-top: 5px;
+        }
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .button {
+            background-color: #444e69;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            margin: 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .button:hover {
+            background-color: #575f7f;
+        }
+        .logo-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .logo {
+            width: 160px;
+            height: 160px;
+            margin-bottom: 15px;
+        }
+        .iframe-container {
+            width: 45%;
+            height: 300px;
+            border: 2px solid #444e69;
+            border-radius: 8px;
+            margin: 20px;
+            display: inline-block;
+            cursor: pointer;
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .iframe-container:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            pointer-events: none;
+        }
+        .section-title {
+            margin-top: 40px;
+            border-bottom: 2px solid #444e69;
+            padding-bottom: 10px;
+        }
+        .footer {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #aaa;
+            padding: 20px 0;
+            border-top: 1px solid #444e69;
+        }
+        @media (max-width: 768px) {
+            .iframe-container {
+                width: 90%;
+                height: 200px;
+            }
+            .logo {
+                width: 120px;
+                height: 120px;
+            }
+            .brand-name {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav-buttons">
+            <a href="/" class="button">Home</a>
+            <a href="/import" class="button">Import Data</a>
+            <a href="/about" class="button">About</a>
+        </div>
+        
+        <div class="logo-container">
+            <img src="/OncoContour.png" alt="OncoContour Logo" class="logo">
+            <p class="tagline">Geographic Visualization of Cancer Statistics</p>
+        </div>
+
+        <h2 class="section-title">Region Specific Cancer Mapping</h2>
+        <p>Click on a visualization to view it in full screen:</p>
+        
+        <div class="iframe-container" onclick="navigateTo('/rhode_island_cancer_map_v12.1.html')">
+            <iframe src="rhode_island_cancer_map_v12.1.html" title="Population Distribution"></iframe>
+        </div>
+        <div class="iframe-container" onclick="navigateTo('/rhode_island_cancer_map_v12.html')">
+            <iframe src="rhode_island_cancer_map_v12.html" title="Cancer Incidence Map"></iframe>
+        </div>
+
+        <div id="visualization"></div>
+        
+        <div class="footer">
+            <p>© 2025 OncoContour - Geospatial Cancer Analytics</p>
+        </div>
+    </div>
+
+    <script>
+        function navigateTo(path) {
+            window.location.href = path;
+        }
+    </script>
+</body>
+</html>
+"""
+
 # Import page HTML content
 import_page_html = """
 <!DOCTYPE html>
@@ -42,7 +199,7 @@ import_page_html = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Import Data</title>
+    <title>Import Data - OncoContour</title>
     <style>
         body {
             font-family: 'Roboto', Arial, sans-serif;
@@ -71,6 +228,8 @@ import_page_html = """
             font-size: 16px;
             transition: background-color 0.3s ease;
             margin: 5px;
+            text-decoration: none;
+            display: inline-block;
         }
         .button:hover {
             background-color: #575f7f;
@@ -135,6 +294,14 @@ import_page_html = """
             font-size: 14px;
             line-height: 1.4;
         }
+        .footer {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #aaa;
+            padding: 20px 0;
+            border-top: 1px solid #444e69;
+        }
         @media (max-width: 768px) {
             .file-group, .example-data {
                 width: 100%;
@@ -146,8 +313,9 @@ import_page_html = """
 <body>
     <div class="container">
         <div class="nav-buttons">
-            <button class="button" onclick="navigateTo('/')">Home</button>
-            <button class="button" onclick="navigateTo('/import')">Import</button>
+            <a href="/" class="button">Home</a>
+            <a href="/import" class="button">Import Data</a>
+            <a href="/about" class="button">About</a>
         </div>
 
         <h1>Data Import</h1>
@@ -222,6 +390,10 @@ Female,54344,66057,75425,72340,62843,75137,73676,46375,30832</div>
             </button>
         </div>
         <div id="visualization"></div>
+        
+        <div class="footer">
+            <p>© 2025 OncoContour - Geospatial Cancer Analytics</p>
+        </div>
     </div>
 
     <script>
@@ -305,14 +477,14 @@ Female,54344,66057,75425,72340,62843,75137,73676,46375,30832</div>
 </html>
 """
 
-# Landing page HTML
-landing_page_html = """
+# About page HTML content
+about_page_html = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OncoContour - Cancer Research Data Portal</title>
+    <title>About - OncoContour</title>
     <style>
         body {
             font-family: 'Roboto', Arial, sans-serif;
@@ -325,29 +497,11 @@ landing_page_html = """
             max-width: 1200px;
             margin: 0 auto;
         }
-        .header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 30px;
-        }
-        .brand-name {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin: 0;
-            color: #e4e4eb;
-        }
-        .tagline {
-            font-size: 1.2rem;
-            color: #aaa;
-            margin-top: 5px;
-        }
         .nav-buttons {
             display: flex;
             justify-content: center;
             gap: 20px;
-            margin: 30px 0;
+            margin-bottom: 30px;
         }
         .button {
             background-color: #444e69;
@@ -358,45 +512,67 @@ landing_page_html = """
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.3s ease;
-            margin: 5px;
+            text-decoration: none;
+            display: inline-block;
         }
         .button:hover {
             background-color: #575f7f;
         }
-        .logo-container {
-            margin-top: 30px;
-            text-align: center;
-        }
-        .logo {
-            width: 160px;
-            height: 160px;
-            margin-bottom: 15px;
-        }
-        .iframe-container {
-            width: 45%;
-            height: 300px;
-            border: 2px solid #444e69;
+        .section {
+            background-color: #2a2a3c;
+            padding: 30px;
             border-radius: 8px;
-            margin: 20px;
-            display: inline-block;
-            cursor: pointer;
-            overflow: hidden;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-bottom: 30px;
         }
-        .iframe-container:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            pointer-events: none;
-        }
-        .section-title {
-            margin-top: 40px;
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
             border-bottom: 2px solid #444e69;
+            padding-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.8rem;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #444e69;
             padding-bottom: 10px;
+        }
+        h3 {
+            font-size: 1.3rem;
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #6b9bd1;
+        }
+        p {
+            line-height: 1.8;
+            color: #c4c4d4;
+            font-size: 1rem;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .feature-card {
+            background-color: #353549;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #6b9bd1;
+        }
+        .tech-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .tech-tag {
+            background-color: #353549;
+            color: #e4e4eb;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            border: 1px solid #444e69;
         }
         .footer {
             margin-top: 60px;
@@ -407,16 +583,14 @@ landing_page_html = """
             border-top: 1px solid #444e69;
         }
         @media (max-width: 768px) {
-            .iframe-container {
-                width: 90%;
-                height: 200px;
-            }
-            .logo {
-                width: 120px;
-                height: 120px;
-            }
-            .brand-name {
+            h1 {
                 font-size: 2rem;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+            .feature-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -424,27 +598,62 @@ landing_page_html = """
 <body>
     <div class="container">
         <div class="nav-buttons">
-            <button class="button" onclick="navigateTo('/')">Home</button>
-            <button class="button" onclick="navigateTo('/import')">Import Data</button>
-        </div>
-        
-        <div class="logo-container">
-            <img src="/OncoContour.png" alt="OncoContour Logo" class="logo">
-            <p class="tagline">Geographic Visualization of Cancer Statistics</p>
+            <a href="/" class="button">Home</a>
+            <a href="/import" class="button">Import Data</a>
+            <a href="/about" class="button">About</a>
         </div>
 
-        <h2 class="section-title">Region Specific Cancer Mapping</h2>
-        <p>Click on a visualization to view it in full screen:</p>
-        
-        <div class="iframe-container" onclick="navigateTo('/rhode_island_cancer_map_v12.1.html')">
-            <iframe src="rhode_island_cancer_map_v12.1.html" title="Population Distribution"></iframe>
-        </div>
-        <div class="iframe-container" onclick="navigateTo('/rhode_island_cancer_map_v12.html')">
-            <iframe src="rhode_island_cancer_map_v12.html" title="Cancer Incidence Map"></iframe>
+        <div class="section">
+            <h1>About This Application</h1>
+            <p style="font-size: 1.1rem; color: #a0a0b0;">
+                Empowering public health research through data visualization and analysis
+            </p>
         </div>
 
-        <div id="visualization"></div>
-        
+        <div class="section">
+            <h2>Purpose and Objectives</h2>
+            <p>
+                This application provides comprehensive cancer data visualization and analysis tools designed for
+                public health researchers, policymakers, and community organizations. The platform combines
+                geographic, demographic, and epidemiological data to reveal patterns and trends in cancer
+                incidence across different regions, facilitating evidence-based decision making and research.
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>Key Features and Capabilities</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>Interactive Geographic Mapping</h3>
+                    <p>
+                        Visualize population density and cancer incidence rates through dynamic heatmaps with
+                        interactive markers providing detailed regional information and comparative analysis.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <h3>Temporal Trend Analysis</h3>
+                    <p>
+                        Examine multi-year cancer incidence patterns with city-by-city comparisons and interactive
+                        charting capabilities for comprehensive temporal analysis.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <h3>Custom Data Integration</h3>
+                    <p>
+                        Import custom CSV datasets to generate tailored visualizations for any geographic region,
+                        enabling specialized research and analysis requirements.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <h3>Demographics Integration</h3>
+                    <p>
+                        Correlate cancer data with age, sex, and race demographics to identify population-specific
+                        patterns and inform targeted public health interventions.
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <div class="footer">
             <p>© 2025 OncoContour - Geospatial Cancer Analytics</p>
         </div>
@@ -459,6 +668,15 @@ landing_page_html = """
 </html>
 """
 
+# US state abbreviations for validation
+US_STATES = {
+    'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 
+    'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 
+    'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 
+    'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 
+    'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
+}
+
 @app.route('/')
 def home():
     response = make_response(render_template_string(landing_page_html))
@@ -471,14 +689,11 @@ def import_page():
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     return response
 
-# US state abbreviations for validation
-US_STATES = {
-    'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 
-    'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 
-    'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 
-    'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 
-    'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
-}
+@app.route('/about')
+def about_page():
+    response = make_response(render_template_string(about_page_html))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return response
 
 @app.route('/upload', methods=['POST'])
 def upload_file():

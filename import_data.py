@@ -630,7 +630,8 @@ def generate_html_output(population_map, cancer_map, extra_charts, created_visua
         <div class="container">
             <div class="nav-buttons">
                 <a href="/" class="button">Home</a>
-                <a href="/import" class="button">Import</a>
+                <a href="/import" class="button">Import Data</a>
+                <a href="/about" class="button">About</a>
             </div>
             
             <h1>Cancer Data Visualization Report</h1>
