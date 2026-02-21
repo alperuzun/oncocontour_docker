@@ -158,6 +158,7 @@ landing_page_html = """
         <div class="nav-buttons">
             <a href="/" class="button">Home</a>
             <a href="/import" class="button">Import Data</a>
+            <a href="/user-guide" class="button">User Guide</a>
             <a href="/about" class="button">About</a>
         </div>
         
@@ -315,6 +316,7 @@ import_page_html = """
         <div class="nav-buttons">
             <a href="/" class="button">Home</a>
             <a href="/import" class="button">Import Data</a>
+            <a href="/user-guide" class="button">User Guide</a>
             <a href="/about" class="button">About</a>
         </div>
 
@@ -574,6 +576,38 @@ about_page_html = """
             font-size: 0.95rem;
             border: 1px solid #444e69;
         }
+        .authors-section {
+            background-color: #2a2a3c;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #6b9bd1;
+        }
+        .author-info {
+            margin-bottom: 20px;
+        }
+        .author-info p {
+            margin: 5px 0;
+        }
+        .contact-info {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #444e69;
+        }
+        .lab-link {
+            display: inline-block;
+            background-color: #353549;
+            color: #6b9bd1;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .lab-link:hover {
+            background-color: #444e69;
+            color: #e4e4eb;
+        }
         .footer {
             margin-top: 60px;
             text-align: center;
@@ -600,6 +634,7 @@ about_page_html = """
         <div class="nav-buttons">
             <a href="/" class="button">Home</a>
             <a href="/import" class="button">Import Data</a>
+            <a href="/user-guide" class="button">User Guide</a>
             <a href="/about" class="button">About</a>
         </div>
 
@@ -608,6 +643,25 @@ about_page_html = """
             <p style="font-size: 1.1rem; color: #a0a0b0;">
                 Empowering public health research through data visualization and analysis
             </p>
+        </div>
+
+        <div class="authors-section">
+            <h2>Authors</h2>
+            <div class="author-info">
+                <p>This project was developed by Alper Uzun and Daniel White at The Warren Alpert Medical School of Brown University.</p>
+            </div>
+            
+            <h2>Contact</h2>
+            <div class="author-info">
+                <p>For questions or support, please contact:</p>
+                <p>• Dr. Alper Uzun (<a href="mailto:alper_uzun@brown.edu" style="color: #6b9bd1; text-decoration: none;">alper_uzun@brown.edu</a>)</p>
+                <p>• Daniel White (<a href="mailto:daniel_white@brown.edu" style="color: #6b9bd1; text-decoration: none;">daniel_white@brown.edu</a>)</p>
+            </div>
+            
+            <div class="contact-info">
+                <p>Visit our lab website:</p>
+                <a href="https://sites.brown.edu/gmilab/" target="_blank" class="lab-link">Genomics and Machine Intelligence Lab →</a>
+            </div>
         </div>
 
         <div class="section">
@@ -668,6 +722,114 @@ about_page_html = """
 </html>
 """
 
+# User Guide page HTML content
+user_guide_page_html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Guide - OncoContour</title>
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1e1e2f;
+            color: #e4e4eb;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .button {
+            background-color: #444e69;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .button:hover { background-color: #575f7f; }
+        .guide-box {
+            background-color: #2a2a3c;
+            border-radius: 10px;
+            padding: 40px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #444e69;
+            padding-bottom: 15px;
+        }
+        .version {
+            color: #aaa;
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+        .download-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background-color: #444e69;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        .download-link:hover { background-color: #575f7f; }
+        .footer {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #aaa;
+            padding: 20px 0;
+            border-top: 1px solid #444e69;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav-buttons">
+            <a href="/" class="button">Home</a>
+            <a href="/import" class="button">Import Data</a>
+            <a href="/user-guide" class="button">User Guide</a>
+            <a href="/about" class="button">About</a>
+        </div>
+
+        <h1>User Guide</h1>
+
+        <div class="guide-box">
+            <p class="version"><strong>Version:</strong> 1.1</p>
+            <p style="color: #c4c4d4; margin-bottom: 30px;">Click below to open the OncoContour User Guide.</p>
+            <a href="/OncoCountourUserGuide.pdf" target="_blank" class="download-link">
+                &#8595; Open User Guide (PDF)
+            </a>
+        </div>
+
+        <div class="footer">
+            <p>&#169; 2025 OncoContour - Geospatial Cancer Analytics</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
 # US state abbreviations for validation
 US_STATES = {
     'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 
@@ -692,6 +854,12 @@ def import_page():
 @app.route('/about')
 def about_page():
     response = make_response(render_template_string(about_page_html))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return response
+
+@app.route('/user-guide')
+def user_guide_page():
+    response = make_response(render_template_string(user_guide_page_html))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     return response
 
