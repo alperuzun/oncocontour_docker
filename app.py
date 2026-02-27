@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify, render_template_string, send_from_directory, make_response
 import folium
 from folium.plugins import HeatMap
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.graph_objs as go
@@ -34,6 +36,341 @@ def clear_uploads_folder():
                 os.unlink(file_path)
         except Exception as e:
             print(f"Error deleting file {file_path}: {e}")
+
+# ---------------------------------------------------------------------------
+# Functions from cancermaps_v12.0.py not previously in app.py
+# ---------------------------------------------------------------------------
+
+def create_total_cancer_chart(location_name, location_data, years):
+    """
+    Create a matplotlib line chart of total cancer cases per year for a city.
+    Returns an <img> HTML string (base64 PNG) or '' on failure.
+    Ported from cancermaps_v12.0.py.
+    """
+    if location_data is None or location_data.empty:
+        return ""
+    try:
+        total_cases = location_data[years].astype(int).values.flatten()
+        if len(total_cases) != len(years):
+            return ""
+
+        with plt.ioff():
+            fig, ax = plt.subplots(figsize=(3.5, 2.2))
+            ax.plot(years, total_cases, marker="o", color="#66b3ff")
+            ax.set_title(f"Total Cancer Trend in {location_name}", fontsize=9, color="white")
+            ax.set_xlabel("Year", fontsize=8, color="white")
+            ax.set_ylabel("Number of Cases", fontsize=8, color="white")
+            ax.tick_params(colors="white", labelsize=7)
+            fig.patch.set_facecolor("#1b263b")
+            ax.set_facecolor("#0d1b2a")
+            for spine in ax.spines.values():
+                spine.set_edgecolor("#415a77")
+
+            buf = BytesIO()
+            plt.savefig(buf, format="png", bbox_inches="tight",
+                        facecolor=fig.get_facecolor())
+            plt.close(fig)
+            buf.seek(0)
+            image = base64.b64encode(buf.read()).decode("utf-8")
+            return f'<img src="data:image/png;base64,{image}" width="320" height="200">'
+
+    except Exception as e:
+        print(f"Chart error for {location_name}: {e}")
+        return ""
+
+
+def create_interactive_comparative_chart(df, city_coordinates, years):
+    """
+    Create a Plotly chart comparing cancer trends across all cities.
+    Returns an HTML div string.
+    Ported from cancermaps_v12.0.py.
+    """
+    traces = []
+    for city in city_coordinates.keys():
+        location_data = df[df['City'] == city]
+        if location_data.empty:
+            continue
+        try:
+            total_cases = location_data[years].astype(int).values.flatten()
+            if len(total_cases) != len(years):
+                continue
+            trace = go.Scatter(
+                x=years,
+                y=total_cases,
+                mode='lines+markers',
+                name=city,
+                hovertemplate=f"<b>{city}</b><br>Year: %{{x}}<br>Cases: %{{y:,}}<extra></extra>"
+            )
+            traces.append(trace)
+        except Exception:
+            continue
+
+    layout = go.Layout(
+        title={
+            'text': 'Interactive Comparative Cancer Trends Across Cities',
+            'font': {'size': 20, 'color': 'white'}
+        },
+        xaxis=dict(title='Year', color='white', gridcolor='#415a77'),
+        yaxis=dict(title='Number of Cases', color='white', gridcolor='#415a77'),
+        hovermode='closest',
+        height=500,
+        plot_bgcolor='#1b263b',
+        paper_bgcolor='#1b263b',
+        font={'color': 'white'},
+        legend={'font': {'size': 12, 'color': 'white'}},
+        margin=dict(l=60, r=20, t=60, b=60)
+    )
+    fig = go.Figure(data=traces, layout=layout)
+    return pio.to_html(fig, full_html=False,
+                       config={'displayModeBar': True, 'scrollZoom': True})
+
+
+def create_cancer_table(df, location_name, cancer_types, population_data):
+    """
+    Create an HTML table of cancer types and case counts for a city popup.
+    Ported from cancermaps_v12.0.py.
+    """
+    location_data = df[df['City'] == location_name]
+    population = population_data.get(location_name, 'N/A')
+
+    table_html = """
+    <table style="width:100%; border-collapse:collapse; color:white; font-size:13px;">
+        <tr>
+            <th style="border:1px solid #415a77; padding:5px; background-color:#415a77;">Cancer Type</th>
+            <th style="border:1px solid #415a77; padding:5px; background-color:#415a77;">Cases</th>
+        </tr>
+    """
+    for cancer in cancer_types:
+        try:
+            num_cases = int(location_data[cancer].values[0])
+        except Exception:
+            num_cases = 0
+        table_html += (
+            f"<tr>"
+            f"<td style='border:1px solid #415a77; padding:5px;'>{cancer}</td>"
+            f"<td style='border:1px solid #415a77; padding:5px; text-align:center;'>{num_cases}</td>"
+            f"</tr>"
+        )
+    table_html += (
+        f"<tr>"
+        f"<td style='border:1px solid #415a77; padding:5px; font-weight:bold;'>Population</td>"
+        f"<td style='border:1px solid #415a77; padding:5px; text-align:center;'>"
+        f"{int(population):,}</td>"
+        f"</tr>"
+    )
+    table_html += "</table>"
+    return table_html
+
+
+def generate_graph_table(df, city_coordinates, years, num_per_row=2):
+    """
+    Build a grid of per-city matplotlib trend charts.
+    Returns an HTML table string.
+    Ported from cancermaps_v12.0.py.
+    """
+    graphs = []
+    for city in city_coordinates.keys():
+        location_data = df[df['City'] == city]
+        chart_html = create_total_cancer_chart(city, location_data, years)
+        if chart_html:
+            label = (f"<div style='text-align:center;font-size:12px;"
+                     f"color:#aaa;margin-bottom:4px;'>{city}</div>")
+            graphs.append(label + chart_html)
+
+    if not graphs:
+        return "<p style='color:#aaa;'>No trend charts available.</p>"
+
+    table_html = "<table style='width:100%; border-collapse:collapse;'>"
+    for i in range(0, len(graphs), num_per_row):
+        table_html += "<tr>"
+        for graph in graphs[i:i + num_per_row]:
+            table_html += (
+                f"<td style='border:1px solid #415a77; padding:12px;"
+                f"vertical-align:top; background-color:#162c49;'>{graph}</td>"
+            )
+        table_html += "</tr>"
+    table_html += "</table>"
+    return table_html
+
+
+# ---------------------------------------------------------------------------
+# Functions from cancermaps_v12.1.py not previously in app.py
+# ---------------------------------------------------------------------------
+
+def create_population_table(county_race_data):
+    """
+    Convert county race DataFrame to a styled HTML table.
+    Ported from cancermaps_v12.1.py.
+    """
+    return county_race_data.to_html(
+        index=False, border=0, justify='center', classes='cancer-csv-table'
+    )
+
+
+def create_age_sex_population_table(age_sex_data):
+    """
+    Convert age/sex DataFrame to a styled HTML table.
+    Ported from cancermaps_v12.1.py.
+    """
+    return age_sex_data.to_html(
+        index=False, border=0, justify='center', classes='cancer-csv-table'
+    )
+
+
+def create_population_pie_chart(county_race_data):
+    """
+    Pie chart of race proportions derived from uploaded county race data.
+    Ported from cancermaps_v12.1.py.
+    """
+    try:
+        race_cols = [c for c in county_race_data.columns if c != 'County']
+        totals = county_race_data[race_cols].sum()
+        labels = totals.index.tolist()
+        sizes = totals.values.tolist()
+        colors = ['#ff9999','#66b3ff','#99ff99','#ffcc99','#c2c2f0','#ffb3e6','#ffd700',
+                  '#aec6cf','#b39ddb','#80cbc4']
+
+        with plt.ioff():
+            fig, ax = plt.subplots(figsize=(12, 8))
+            ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90,
+                   colors=colors[:len(labels)],
+                   wedgeprops={'edgecolor': 'black'},
+                   textprops={'fontsize': 14, 'color': 'white'})
+            ax.axis('equal')
+            fig.patch.set_facecolor('#1b263b')
+            plt.tight_layout()
+
+            buf = BytesIO()
+            plt.savefig(buf, format='png', bbox_inches='tight',
+                        facecolor=fig.get_facecolor())
+            plt.close(fig)
+            buf.seek(0)
+            image = base64.b64encode(buf.read()).decode('utf-8')
+            return (f'<img src="data:image/png;base64,{image}" '
+                    f'style="width:100%; height:auto; max-width:1200px; margin:0 auto; display:block;">')
+    except Exception as e:
+        print(f"Race pie chart error: {e}")
+        return ''
+
+
+def create_hispanic_population_pie_chart(county_race_data):
+    """
+    Pie chart of Hispanic vs non-Hispanic population derived from uploaded data.
+    If a 'Hispanic or Latino' column exists, uses real data; otherwise falls back
+    to RI state-level figures from cancermaps_v12.1.py.
+    Ported from cancermaps_v12.1.py.
+    """
+    try:
+        hispanic_col = next(
+            (c for c in county_race_data.columns
+             if 'hispanic' in c.lower() or 'latino' in c.lower()), None
+        )
+        if hispanic_col:
+            hispanic_total = county_race_data[hispanic_col].sum()
+            other_total = county_race_data[
+                [c for c in county_race_data.columns
+                 if c != 'County' and c != hispanic_col]
+            ].sum().sum()
+            sizes = [hispanic_total, other_total]
+        else:
+            sizes = [16.6, 83.4]
+
+        labels = ['Hispanic or Latino', 'Non Hispanic or Latino']
+        colors = ['#c2c2f0', '#8fbc8f']
+
+        with plt.ioff():
+            fig, ax = plt.subplots(figsize=(12, 8))
+            ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90,
+                   colors=colors,
+                   wedgeprops={'edgecolor': 'black'},
+                   textprops={'fontsize': 14, 'color': 'white'})
+            ax.axis('equal')
+            fig.patch.set_facecolor('#1b263b')
+            plt.tight_layout()
+
+            buf = BytesIO()
+            plt.savefig(buf, format='png', bbox_inches='tight',
+                        facecolor=fig.get_facecolor())
+            plt.close(fig)
+            buf.seek(0)
+            image = base64.b64encode(buf.read()).decode('utf-8')
+            return (f'<img src="data:image/png;base64,{image}" '
+                    f'style="width:100%; height:auto; max-width:1200px; margin:0 auto; display:block;">')
+    except Exception as e:
+        print(f"Hispanic pie chart error: {e}")
+        return ''
+
+
+def create_age_pie_chart(age_sex_data):
+    """
+    Pie chart of total population by age group.
+    Ported from cancermaps_v12.1.py.
+    """
+    try:
+        import numpy as np
+        age_labels = age_sex_data.columns[1:]
+        total_by_age = age_sex_data[age_labels].sum()
+
+        with plt.ioff():
+            fig, ax = plt.subplots(figsize=(12, 8))
+            ax.pie(total_by_age, labels=age_labels, autopct='%1.1f%%', startangle=90,
+                   colors=plt.cm.Pastel1(np.linspace(0, 1, len(age_labels))),
+                   textprops={'fontsize': 14, 'color': 'white'})
+            ax.axis('equal')
+            fig.patch.set_facecolor('#1b263b')
+            plt.tight_layout()
+
+            buf = BytesIO()
+            plt.savefig(buf, format='png', bbox_inches='tight',
+                        facecolor=fig.get_facecolor())
+            plt.close(fig)
+            buf.seek(0)
+            image = base64.b64encode(buf.read()).decode('utf-8')
+            return (f'<img src="data:image/png;base64,{image}" '
+                    f'style="width:100%; height:auto; max-width:1200px; margin:0 auto; display:block;">')
+    except Exception as e:
+        print(f"Age pie chart error: {e}")
+        return ''
+
+
+def create_sex_pie_chart(age_sex_data):
+    """
+    Pie chart of total population split by sex.
+    Ported from cancermaps_v12.1.py.
+    """
+    try:
+        age_cols = age_sex_data.columns[1:]
+        male_total   = age_sex_data.loc[age_sex_data['Sex'] == 'Male',   age_cols].sum().sum()
+        female_total = age_sex_data.loc[age_sex_data['Sex'] == 'Female', age_cols].sum().sum()
+        sizes  = [male_total, female_total]
+        labels = ['Male', 'Female']
+        colors = ['#66b3ff', '#ff9999']
+
+        with plt.ioff():
+            fig, ax = plt.subplots(figsize=(12, 8))
+            ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90,
+                   colors=colors, textprops={'fontsize': 14, 'color': 'white'})
+            ax.set_title('Population by Sex', fontsize=18, color='white')
+            ax.axis('equal')
+            fig.patch.set_facecolor('#1b263b')
+            plt.tight_layout()
+
+            buf = BytesIO()
+            plt.savefig(buf, format='png', bbox_inches='tight',
+                        facecolor=fig.get_facecolor())
+            plt.close(fig)
+            buf.seek(0)
+            image = base64.b64encode(buf.read()).decode('utf-8')
+            return (f'<img src="data:image/png;base64,{image}" '
+                    f'style="width:100%; height:auto; max-width:1200px; margin:0 auto; display:block;">')
+    except Exception as e:
+        print(f"Sex pie chart error: {e}")
+        return ''
+
+
+# ---------------------------------------------------------------------------
+# Page HTML strings
+# ---------------------------------------------------------------------------
 
 # Landing page HTML
 landing_page_html = """
@@ -451,7 +788,6 @@ Female,54344,66057,75425,72340,62843,75137,73676,46375,30832</div>
         }
 
         function visualizeData() {
-            // Check if at least one file is uploaded
             const hasFiles = Object.values(uploadedFiles).some(value => value === true);
             
             if (!hasFiles) {
@@ -463,7 +799,6 @@ Female,54344,66057,75425,72340,62843,75137,73676,46375,30832</div>
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Redirect to the visualization page
                     window.location.href = data.redirect;
                 } else {
                     alert('Error: ' + data.message);
@@ -617,15 +952,9 @@ about_page_html = """
             border-top: 1px solid #444e69;
         }
         @media (max-width: 768px) {
-            h1 {
-                font-size: 2rem;
-            }
-            h2 {
-                font-size: 1.5rem;
-            }
-            .feature-grid {
-                grid-template-columns: 1fr;
-            }
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            .feature-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -712,12 +1041,6 @@ about_page_html = """
             <p>© 2025 OncoContour - Geospatial Cancer Analytics</p>
         </div>
     </div>
-
-    <script>
-        function navigateTo(path) {
-            window.location.href = path;
-        }
-    </script>
 </body>
 </html>
 """
@@ -832,12 +1155,16 @@ user_guide_page_html = """
 
 # US state abbreviations for validation
 US_STATES = {
-    'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 
-    'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 
-    'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 
-    'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 
+    'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+    'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+    'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+    'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
     'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
 }
+
+# ---------------------------------------------------------------------------
+# Flask routes
+# ---------------------------------------------------------------------------
 
 @app.route('/')
 def home():
@@ -867,104 +1194,79 @@ def user_guide_page():
 def upload_file():
     if 'file' not in request.files:
         return jsonify({'success': False, 'message': 'No file part'})
-    
+
     file = request.files['file']
     file_type = request.form.get('type', '')
-    
+
     if file.filename == '':
         return jsonify({'success': False, 'message': 'No selected file'})
-    
+
     if file and file.filename.endswith('.csv'):
         filename = f"{file_type}_data.csv"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        
-        # Remove existing file if it exists
+
         if os.path.exists(filepath):
             try:
                 os.remove(filepath)
             except Exception as e:
                 print(f"Error removing existing file: {e}")
-        
+
         try:
-            # Save the file temporarily to read it
             temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp.csv')
             file.save(temp_path)
-            
-            # Read the CSV file
             df = pd.read_csv(temp_path)
-            
-            # Specific validation for cancer data
+
             if file_type == 'cancer':
-                # Check required columns
                 if len(df.columns) < 3:
                     os.remove(temp_path)
                     return jsonify({
                         'success': False,
                         'message': 'Cancer data must have at least City, State and one data column'
                     })
-                
-                # Check first two columns are City and State
                 if df.columns[0].lower() != 'city' or df.columns[1].lower() != 'state':
                     os.remove(temp_path)
                     return jsonify({
                         'success': False,
                         'message': 'First two columns must be "City" and "State"'
                     })
-                
-                # Validate state abbreviations
                 if not all(str(state).upper() in US_STATES for state in df.iloc[:, 1]):
                     os.remove(temp_path)
                     return jsonify({
                         'success': False,
                         'message': 'State column must contain valid 2-letter US state abbreviations'
                     })
-                
-                # Validate remaining columns are either cancer types or years
                 for col in df.columns[2:]:
-                    if not (str(col).isalpha() or str(col).isdigit()):
+                    col_stripped = str(col).strip()
+                    if not (col_stripped.isalpha() or col_stripped.isdigit()):
                         os.remove(temp_path)
                         return jsonify({
                             'success': False,
                             'message': f'Column "{col}" must be either a cancer type (text) or year (number)'
                         })
-            
-            # For other file types, keep existing validation
+
             elif file_type == 'countyRace':
                 if df.columns[0] != 'County':
                     os.remove(temp_path)
-                    return jsonify({
-                        'success': False,
-                        'message': 'First column must be "County"'
-                    })
+                    return jsonify({'success': False, 'message': 'First column must be "County"'})
+
             elif file_type == 'ageSex':
                 if df.columns[0] != 'Sex':
                     os.remove(temp_path)
-                    return jsonify({
-                        'success': False,
-                        'message': 'First column must be "Sex"'
-                    })
-            
-            # If validation passed, move the temp file to final location
+                    return jsonify({'success': False, 'message': 'First column must be "Sex"'})
+
             os.rename(temp_path, filepath)
-            
             return jsonify({
                 'success': True,
                 'message': f'{file_type.capitalize()} data uploaded successfully'
             })
-            
+
         except Exception as e:
-            # Clean up temp file if it exists
             if os.path.exists(temp_path):
                 os.remove(temp_path)
-            return jsonify({
-                'success': False,
-                'message': f'Error processing file: {str(e)}'
-            })
-    
-    return jsonify({
-        'success': False,
-        'message': 'Invalid file format. Please upload a CSV file.'
-    })
+            return jsonify({'success': False, 'message': f'Error processing file: {str(e)}'})
+
+    return jsonify({'success': False, 'message': 'Invalid file format. Please upload a CSV file.'})
+
 
 @app.route('/<path:filename>')
 def serve_file(filename):
@@ -979,38 +1281,276 @@ def serve_file(filename):
             return "File not found", 404
     return send_from_directory(STATIC_FOLDER, filename)
 
+
 @app.route('/visualize')
 def visualize():
     try:
-        # Check if at least one file exists in the upload folder
         uploaded_files = [f for f in os.listdir(UPLOAD_FOLDER) if f.endswith('.csv')]
-        
         if not uploaded_files:
             return jsonify({
                 'success': False,
-                'message': 'No data files found. Please upload at least one file before generating visualizations.'
+                'message': 'No data files found. Please upload at least one file.'
             })
-        
-        # Call the custom cancer map generator
+
+        # Run import_data to generate the map files and standalone chart files
         success = custom_cancer_map.generate_visualization(uploads_folder=UPLOAD_FOLDER)
-        
-        if success:
-            # Return the path to the visualization as JSON
-            return jsonify({
-                'success': True,
-                'redirect': '/custom_cancer_map_v12_4.html'
-            })
-        else:
+        if not success:
             return jsonify({
                 'success': False,
-                'message': 'Error generating visualization. Please check that you have uploaded the necessary data files.'
+                'message': 'Error generating visualization. Please check your data files.'
             })
-            
+
+        # ----------------------------------------------------------------
+        # Now build the extra sections from cancermaps_v12.0.py features
+        # ----------------------------------------------------------------
+        cancer_path = os.path.join(UPLOAD_FOLDER, 'cancer_data.csv')
+        county_race_path = os.path.join(UPLOAD_FOLDER, 'countyRace_data.csv')
+        age_sex_path = os.path.join(UPLOAD_FOLDER, 'ageSex_data.csv')
+
+        cancer_table_html = ''
+        comparative_chart_html = ''
+        graph_table_html = ''
+        years = []
+
+        # v12.1 demographic section HTML strings
+        county_race_table_html = ''
+        race_pie_html = ''
+        hispanic_pie_html = ''
+        age_sex_table_html = ''
+        age_pie_html = ''
+        sex_pie_html = ''
+
+        if os.path.exists(cancer_path):
+            df = pd.read_csv(cancer_path)
+            df.columns = df.columns.str.strip()
+            years = [col for col in df.columns if col.strip().isdigit()]
+            cancer_types = [col for col in df.columns if col not in ['City', 'State'] + years]
+
+            # --- Cancer data table (from cancermaps_v12.0 create_csv_table) ---
+            cancer_table_html = df.to_html(index=False, border=0, classes='cancer-csv-table')
+
+            # Load census for coordinates so chart functions can run
+            census_path = 'processed_census_data.csv'
+            if not os.path.exists(census_path):
+                census_path = os.path.join(UPLOAD_FOLDER, 'processed_census_data.csv')
+
+            if os.path.exists(census_path) and years:
+                census_data = pd.read_csv(census_path)
+                merged = pd.merge(
+                    df, census_data,
+                    left_on=['City', 'State'],
+                    right_on=['city', 'state_id'],
+                    how='inner'
+                )
+                city_coordinates = {
+                    row['City']: [row['lat'], row['lng']]
+                    for _, row in merged.iterrows()
+                }
+                population_data = {
+                    row['City']: row['population']
+                    for _, row in merged.iterrows()
+                }
+
+                # Comparative Plotly chart (inline HTML div)
+                comparative_chart_html = create_interactive_comparative_chart(
+                    df, city_coordinates, years
+                )
+
+                # Per-city matplotlib grid
+                graph_table_html = generate_graph_table(df, city_coordinates, years)
+
+        # --- v12.1: county race demographics ---------------------------------
+        if os.path.exists(county_race_path):
+            county_race_data = pd.read_csv(county_race_path)
+            county_race_data.columns = county_race_data.columns.str.strip()
+            county_race_table_html = create_population_table(county_race_data)
+            race_pie_html = create_population_pie_chart(county_race_data)
+            hispanic_pie_html = create_hispanic_population_pie_chart(county_race_data)
+
+        # --- v12.1: age/sex demographics -------------------------------------
+        if os.path.exists(age_sex_path):
+            age_sex_data = pd.read_csv(age_sex_path)
+            age_sex_data.columns = age_sex_data.columns.str.strip()
+            age_sex_table_html = create_age_sex_population_table(age_sex_data)
+            age_pie_html = create_age_pie_chart(age_sex_data)
+            sex_pie_html = create_sex_pie_chart(age_sex_data)
+
+        # ----------------------------------------------------------------
+        # Read the map iframes generated by import_data
+        # ----------------------------------------------------------------
+        def iframe(src, height='500px'):
+            return (f'<div style="height:{height}; border-radius:8px; overflow:hidden; '
+                    f'border:2px solid #415a77;">'
+                    f'<iframe src="{src}" style="width:100%;height:100%;border:none;"></iframe>'
+                    f'</div>')
+
+        section_style = ('margin-bottom:40px; background-color:#1b263b; padding:20px; '
+                         'border-radius:8px; border:1px solid #415a77;')
+        h2_style = 'color:white; margin-top:0;'
+        col_style = 'flex:1; min-width:300px;'
+
+        # ----------------------------------------------------------------
+        # Assemble the final output HTML
+        # ----------------------------------------------------------------
+        body_sections = ''
+
+        # -- Maps row (population + cancer incidence) --------------------
+        pop_exists    = os.path.exists('population_map.html')
+        cancer_exists = os.path.exists('cancer_map.html')
+        if pop_exists or cancer_exists:
+            body_sections += '<div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:40px;">'
+            if pop_exists:
+                body_sections += (f'<div style="{col_style}">'
+                                  f'<div style="{section_style}">'
+                                  f'<h2 style="{h2_style}">Population Distribution</h2>'
+                                  f'{iframe("/population_map.html")}'
+                                  f'</div></div>')
+            if cancer_exists:
+                body_sections += (f'<div style="{col_style}">'
+                                  f'<div style="{section_style}">'
+                                  f'<h2 style="{h2_style}">Cancer Incidence Heatmap</h2>'
+                                  f'{iframe("/cancer_map.html")}'
+                                  f'</div></div>')
+            body_sections += '</div>'
+
+        # -- Cancer data table (new from cancermaps_v12.0) ---------------
+        if cancer_table_html:
+            body_sections += (f'<div style="{section_style}">'
+                              f'<h2 style="{h2_style}">Cancer Data Table</h2>'
+                              f'{cancer_table_html}'
+                              f'</div>')
+
+        # -- Comparative Plotly chart (new from cancermaps_v12.0) --------
+        if comparative_chart_html:
+            body_sections += (f'<div style="{section_style}">'
+                              f'<h2 style="{h2_style}">Interactive Comparative Cancer Trends</h2>'
+                              f'{comparative_chart_html}'
+                              f'</div>')
+
+        # -- Standalone chart files from import_data (cancer-specific only) --
+        chart_files = [
+            ('cancer_trends.html',       'Cancer Trends Over Time'),
+            ('cancer_distribution.html', 'Cancer Type Distribution'),
+        ]
+        existing_charts = [(f, t) for f, t in chart_files if os.path.exists(f)]
+        for i in range(0, len(existing_charts), 2):
+            body_sections += '<div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:40px;">'
+            for f, t in existing_charts[i:i+2]:
+                body_sections += (f'<div style="{col_style}">'
+                                  f'<div style="{section_style}">'
+                                  f'<h2 style="{h2_style}">{t}</h2>'
+                                  f'{iframe("/" + f)}'
+                                  f'</div></div>')
+            body_sections += '</div>'
+
+        # -- Per-city graph grid (new from cancermaps_v12.0) -------------
+        if graph_table_html:
+            body_sections += (f'<div style="{section_style}">'
+                              f'<h2 style="{h2_style}">Individual Cancer Trends by City</h2>'
+                              f'{graph_table_html}'
+                              f'</div>')
+
+        # -- County race table + pie charts (new from cancermaps_v12.1) --
+        if county_race_table_html:
+            body_sections += (f'<div style="{section_style}">'
+                              f'<h2 style="{h2_style}">Race Population by County</h2>'
+                              f'{county_race_table_html}'
+                              f'</div>')
+        if race_pie_html or hispanic_pie_html:
+            body_sections += (f'<div style="{section_style}">'
+                              f'<h2 style="{h2_style}">Race Proportions</h2>'
+                              f'{race_pie_html}'
+                              f'{hispanic_pie_html}'
+                              f'</div>')
+
+        # -- Age/sex table + pie charts (new from cancermaps_v12.1) ------
+        if age_sex_table_html:
+            body_sections += (f'<div style="{section_style}">'
+                              f'<h2 style="{h2_style}">Population Data by Age and Sex</h2>'
+                              f'{age_sex_table_html}'
+                              f'</div>')
+        if age_pie_html or sex_pie_html:
+            body_sections += (f'<div style="{section_style}">'
+                              f'<h2 style="{h2_style}">Age and Sex Proportions</h2>'
+                              f'{age_pie_html}'
+                              f'{sex_pie_html}'
+                              f'</div>')
+
+        output_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancer Data Visualization Report</title>
+    <style>
+        body {{
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #0d1b2a;
+            color: #ffffff;
+        }}
+        .nav-buttons {{
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }}
+        .button {{
+            background-color: #415a77;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }}
+        .button:hover {{ background-color: #566c86; }}
+        table.cancer-csv-table {{
+            width: 100%;
+            border-collapse: collapse;
+        }}
+        table.cancer-csv-table th {{
+            background-color: #415a77;
+            color: white;
+            padding: 8px;
+            border: 1px solid #415a77;
+            text-align: center;
+        }}
+        table.cancer-csv-table td {{
+            background-color: #1b263b;
+            color: white;
+            padding: 8px;
+            border: 1px solid #415a77;
+            text-align: center;
+            font-size: 0.9em;
+        }}
+    </style>
+</head>
+<body>
+    <div class="nav-buttons">
+        <a href="/" class="button">Home</a>
+        <a href="/import" class="button">Import Data</a>
+        <a href="/user-guide" class="button">User Guide</a>
+        <a href="/about" class="button">About</a>
+    </div>
+    <h1 style="color:white; margin-bottom:30px;">Cancer Data Visualization Report</h1>
+    {body_sections}
+</body>
+</html>"""
+
+        with open('custom_cancer_map_v12_4.html', 'w') as fh:
+            fh.write(output_html)
+
+        return jsonify({'success': True, 'redirect': '/custom_cancer_map_v12_4.html'})
+
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'Error generating visualization: {str(e)}'
-        })
+        import traceback; traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Error generating visualization: {str(e)}'})
+
 
 if __name__ == '__main__':
     app.run(debug=True)
