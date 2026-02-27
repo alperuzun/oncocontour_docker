@@ -682,6 +682,27 @@ Lincoln,RI,32,20,15,10,18,35,16,15,14,13,12
 Barrington,RI,33,25,18,12,23,55,21,20,19,18,17</div>
                 </div>
             </div>
+
+            <!-- City Coordinates Cancer Data Section -->
+            <div class="file-group-container">
+                <div class="file-group">
+                    <h3>City Coordinates Cancer Data</h3>
+                    <p>Upload CSV with format: "City,Population,Latitude,Longitude,CancerType1,...,Year1,..."</p>
+                    <p>Use this format when you have coordinates directly instead of State abbreviations.</p>
+                    <input type="file" id="cityCoordsCancerDataFile" accept=".csv" class="button">
+                    <button onclick="uploadFile('cityCoordsCancer')" class="button">Upload City Coords Cancer Data</button>
+                    <div id="cityCoordsCancerStatus" class="status"></div>
+                </div>
+
+                <div class="example-data">
+                    <h3>Example City Coordinates Cancer Data Format</h3>
+                    <p>Your CSV should follow this pattern:</p>
+                    <div class="csv-content">City,Population,Latitude,Longitude,Bladder,Breast,Lung,Prostate,2015,2016,2017,2018,2019,2020,2021
+Providence,190792,41.8236,-71.4222,11,50,40,30,47,45,44,42,41,39,37
+Barrington,17061,41.7409,-71.3084,33,25,18,12,23,55,21,20,19,18,17
+Cranston,82635,41.7798,-71.4373,20,45,35,25,40,38,37,36,35,34,33</div>
+                </div>
+            </div>
             
             <!-- County Race Data Section -->
             <div class="file-group-container">
@@ -739,6 +760,7 @@ Female,54344,66057,75425,72340,62843,75137,73676,46375,30832</div>
         let uploadedFiles = {
             city: false,
             cancer: false,
+            cityCoordsCancer: false,
             countyRace: false,
             ageSex: false
         };
@@ -1244,6 +1266,22 @@ def upload_file():
                             'message': f'Column "{col}" must be either a cancer type (text) or year (number)'
                         })
 
+            elif file_type == 'cityCoordsCancer':
+                required_cols = ['City', 'Population', 'Latitude', 'Longitude']
+                for i, col in enumerate(required_cols):
+                    if i >= len(df.columns) or df.columns[i].strip() != col:
+                        os.remove(temp_path)
+                        return jsonify({
+                            'success': False,
+                            'message': f'Column {i+1} must be "{col}". Expected: City,Population,Latitude,Longitude,CancerType1,...,Year1,...'
+                        })
+                if len(df.columns) < 5:
+                    os.remove(temp_path)
+                    return jsonify({
+                        'success': False,
+                        'message': 'Must have City, Population, Latitude, Longitude, and at least one cancer type or year column'
+                    })
+
             elif file_type == 'countyRace':
                 if df.columns[0] != 'County':
                     os.remove(temp_path)
@@ -1284,6 +1322,108 @@ def serve_file(filename):
 
 @app.route('/visualize')
 def visualize():
+    import math
+
+    # ------------------------------------------------------------------
+    # Helper: build a canonical cancer-type table for popup use.
+    # Uses dark-on-light styling so it renders correctly inside Folium's
+    # default white popup (not the dark app panels).
+    # ------------------------------------------------------------------
+    def _popup_cancer_table(df, city, cancer_types, population_data):
+        location_data = df[df['City'] == city]
+        rows = ''
+        for ct in cancer_types:
+            try:
+                n = int(location_data[ct].values[0])
+            except Exception:
+                n = 0
+            rows += (f"<tr><td style='padding:4px 8px;border:1px solid #ccc;'>{ct}</td>"
+                     f"<td style='padding:4px 8px;border:1px solid #ccc;text-align:center;'>{n}</td></tr>")
+        pop = population_data.get(city, 'N/A')
+        pop_fmt = f'{int(pop):,}' if pop != 'N/A' else 'N/A'
+        rows += (f"<tr><td style='padding:4px 8px;border:1px solid #ccc;font-weight:bold;'>Population</td>"
+                 f"<td style='padding:4px 8px;border:1px solid #ccc;text-align:center;'>{pop_fmt}</td></tr>")
+        return (f"<table style='border-collapse:collapse;font-size:12px;width:100%;'>"
+                f"<thead><tr>"
+                f"<th style='padding:4px 8px;border:1px solid #999;background:#eee;'>Cancer Type</th>"
+                f"<th style='padding:4px 8px;border:1px solid #999;background:#eee;'>Cases</th>"
+                f"</tr></thead><tbody>{rows}</tbody></table>")
+
+    # ------------------------------------------------------------------
+    # Population-only heatmap: pure density, NO markers.
+    # Intensity = log-normalised population.
+    # ------------------------------------------------------------------
+    def _build_population_map(city_coordinates, population_data, out_file):
+        lats = [v[0] for v in city_coordinates.values()]
+        lngs = [v[1] for v in city_coordinates.values()]
+        center = [sum(lats) / len(lats), sum(lngs) / len(lngs)]
+        m = folium.Map(location=center, zoom_start=10)
+
+        pops    = [max(population_data.get(c, 1), 1) for c in city_coordinates]
+        log_pops = [math.log1p(p) for p in pops]
+        max_log  = max(log_pops) if log_pops else 1
+
+        heat_data = []
+        for city, coord in city_coordinates.items():
+            pop       = max(population_data.get(city, 1), 1)
+            intensity = math.log1p(pop) / max_log
+            heat_data.append([coord[0], coord[1], intensity])
+
+        HeatMap(heat_data, radius=55, blur=15, max_zoom=13).add_to(m)
+        folium.LayerControl().add_to(m)
+        m.save(out_file)
+
+    # ------------------------------------------------------------------
+    # Cancer incidence heatmap: intensity = cases per 100 000 residents.
+    # Markers show cancer-type breakdown table + per-city trend chart.
+    # ------------------------------------------------------------------
+    def _build_cancer_map(city_coordinates, population_data, df_cancer,
+                          cancer_types, years, out_file):
+        lats = [v[0] for v in city_coordinates.values()]
+        lngs = [v[1] for v in city_coordinates.values()]
+        center = [sum(lats) / len(lats), sum(lngs) / len(lngs)]
+        m = folium.Map(location=center, zoom_start=10)
+
+        # ── Heatmap layer ──────────────────────────────────────────────
+        heat_data = []
+        for city, coord in city_coordinates.items():
+            row = df_cancer[df_cancer['City'] == city]
+            if row.empty:
+                continue
+            total = (row[years].astype(float).values.sum()
+                     if years else row[cancer_types].astype(float).values.sum())
+            pop   = max(population_data.get(city, 1), 1)
+            per_100k = (total / pop) * 100_000
+            heat_data.append([coord[0], coord[1], per_100k])
+
+        if heat_data:
+            max_val    = max(h[2] for h in heat_data) or 1
+            normalised = [[h[0], h[1], h[2] / max_val] for h in heat_data]
+            HeatMap(normalised, radius=55, blur=15, max_zoom=13).add_to(m)
+
+        # ── Markers with cancer table + trend chart ────────────────────
+        for city, coord in city_coordinates.items():
+            row = df_cancer[df_cancer['City'] == city]
+            if row.empty:
+                continue
+            table = _popup_cancer_table(df_cancer, city, cancer_types, population_data)
+            chart = create_total_cancer_chart(city, row, years)
+            popup_html = (
+                f"<div style='max-width:480px;font-family:Arial,sans-serif;'>"
+                f"<h4 style='margin:0 0 6px;'>{city}</h4>"
+                f"{table}"
+                f"<div style='margin-top:8px;'>{chart}</div>"
+                f"</div>"
+            )
+            folium.Marker(
+                location=coord,
+                popup=folium.Popup(popup_html, max_width=500),
+                icon=folium.Icon(color='blue', icon='info-sign')
+            ).add_to(m)
+
+        folium.LayerControl().add_to(m)
+        m.save(out_file)
+
     try:
         uploaded_files = [f for f in os.listdir(UPLOAD_FOLDER) if f.endswith('.csv')]
         if not uploaded_files:
@@ -1292,7 +1432,7 @@ def visualize():
                 'message': 'No data files found. Please upload at least one file.'
             })
 
-        # Run import_data to generate the map files and standalone chart files
+        # Run import_data to generate standalone chart files
         success = custom_cancer_map.generate_visualization(uploads_folder=UPLOAD_FOLDER)
         if not success:
             return jsonify({
@@ -1301,40 +1441,92 @@ def visualize():
             })
 
         # ----------------------------------------------------------------
-        # Now build the extra sections from cancermaps_v12.0.py features
+        # Paths
         # ----------------------------------------------------------------
-        cancer_path = os.path.join(UPLOAD_FOLDER, 'cancer_data.csv')
-        county_race_path = os.path.join(UPLOAD_FOLDER, 'countyRace_data.csv')
-        age_sex_path = os.path.join(UPLOAD_FOLDER, 'ageSex_data.csv')
+        cancer_path             = os.path.join(UPLOAD_FOLDER, 'cancer_data.csv')
+        city_coords_cancer_path = os.path.join(UPLOAD_FOLDER, 'cityCoordsCancer_data.csv')
+        county_race_path        = os.path.join(UPLOAD_FOLDER, 'countyRace_data.csv')
+        age_sex_path            = os.path.join(UPLOAD_FOLDER, 'ageSex_data.csv')
 
-        cancer_table_html = ''
+        cancer_table_html      = ''
         comparative_chart_html = ''
-        graph_table_html = ''
-        years = []
+        graph_table_html       = ''
+        years                  = []
 
-        # v12.1 demographic section HTML strings
         county_race_table_html = ''
-        race_pie_html = ''
-        hispanic_pie_html = ''
-        age_sex_table_html = ''
-        age_pie_html = ''
-        sex_pie_html = ''
+        race_pie_html          = ''
+        hispanic_pie_html      = ''
+        age_sex_table_html     = ''
+        age_pie_html           = ''
+        sex_pie_html           = ''
 
+        # Track which map files were actually generated this run
+        generated_maps = []   # list of (filename, title)
+
+        # ── City-coordinates cancer CSV (City, Population, Lat, Lng, ...) ─
+        if os.path.exists(city_coords_cancer_path):
+            df_cc = pd.read_csv(city_coords_cancer_path)
+            df_cc.columns = df_cc.columns.str.strip()
+            fixed_cols      = ['City', 'Population', 'Latitude', 'Longitude']
+            years_cc        = [col for col in df_cc.columns if col.strip().isdigit()]
+            cancer_types_cc = [col for col in df_cc.columns
+                               if col not in fixed_cols + years_cc]
+
+            display_cols_cc = [c for c in df_cc.columns
+                               if c not in ('Population', 'Latitude', 'Longitude')]
+            if not cancer_table_html:
+                cancer_table_html = df_cc[display_cols_cc].to_html(
+                    index=False, border=0, classes='cancer-csv-table')
+
+            city_coords_cc = {
+                row['City']: [row['Latitude'], row['Longitude']]
+                for _, row in df_cc.iterrows()
+            }
+            pop_data_cc = {
+                row['City']: row['Population']
+                for _, row in df_cc.iterrows()
+            }
+
+            if years_cc:
+                if not comparative_chart_html:
+                    comparative_chart_html = create_interactive_comparative_chart(
+                        df_cc, city_coords_cc, years_cc)
+                if not graph_table_html:
+                    graph_table_html = generate_graph_table(
+                        df_cc, city_coords_cc, years_cc)
+                if not years:
+                    years = years_cc
+
+            # Build the two city-coords maps (always fresh)
+            _build_population_map(city_coords_cc, pop_data_cc,
+                                  'population_map_coords.html')
+            _build_cancer_map(city_coords_cc, pop_data_cc, df_cc,
+                              cancer_types_cc, years_cc,
+                              'cancer_map_coords.html')
+            generated_maps.append(('population_map_coords.html',
+                                   'Population Distribution (City Coordinates Data)'))
+            generated_maps.append(('cancer_map_coords.html',
+                                   'Cancer Incidence Heatmap (City Coordinates Data)'))
+
+        # ── Standard cancer CSV (City, State, ...) ─────────────────────
         if os.path.exists(cancer_path):
             df = pd.read_csv(cancer_path)
             df.columns = df.columns.str.strip()
-            years = [col for col in df.columns if col.strip().isdigit()]
-            cancer_types = [col for col in df.columns if col not in ['City', 'State'] + years]
+            years_std    = [col for col in df.columns if col.strip().isdigit()]
+            cancer_types = [col for col in df.columns
+                           if col not in ['City', 'State'] + years_std]
 
-            # --- Cancer data table (from cancermaps_v12.0 create_csv_table) ---
-            cancer_table_html = df.to_html(index=False, border=0, classes='cancer-csv-table')
+            display_cols = [c for c in df.columns
+                            if c not in ('Population', 'Latitude', 'Longitude')]
+            if not cancer_table_html:
+                cancer_table_html = df[display_cols].to_html(
+                    index=False, border=0, classes='cancer-csv-table')
 
-            # Load census for coordinates so chart functions can run
             census_path = 'processed_census_data.csv'
             if not os.path.exists(census_path):
                 census_path = os.path.join(UPLOAD_FOLDER, 'processed_census_data.csv')
 
-            if os.path.exists(census_path) and years:
+            if os.path.exists(census_path) and years_std:
                 census_data = pd.read_csv(census_path)
                 merged = pd.merge(
                     df, census_data,
@@ -1342,41 +1534,52 @@ def visualize():
                     right_on=['city', 'state_id'],
                     how='inner'
                 )
-                city_coordinates = {
+                city_coords_std = {
                     row['City']: [row['lat'], row['lng']]
                     for _, row in merged.iterrows()
                 }
-                population_data = {
+                pop_data_std = {
                     row['City']: row['population']
                     for _, row in merged.iterrows()
                 }
 
-                # Comparative Plotly chart (inline HTML div)
-                comparative_chart_html = create_interactive_comparative_chart(
-                    df, city_coordinates, years
-                )
+                if not comparative_chart_html:
+                    comparative_chart_html = create_interactive_comparative_chart(
+                        df, city_coords_std, years_std)
+                if not graph_table_html:
+                    graph_table_html = generate_graph_table(
+                        df, city_coords_std, years_std)
+                if not years:
+                    years = years_std
 
-                # Per-city matplotlib grid
-                graph_table_html = generate_graph_table(df, city_coordinates, years)
+                # Build the two census-based maps (always fresh)
+                _build_population_map(city_coords_std, pop_data_std,
+                                      'population_map_census.html')
+                _build_cancer_map(city_coords_std, pop_data_std, df,
+                                  cancer_types, years_std,
+                                  'cancer_map_census.html')
+                generated_maps.append(('population_map_census.html',
+                                       'Population Distribution (Census Designated Places)'))
+                generated_maps.append(('cancer_map_census.html',
+                                       'Cancer Incidence Heatmap (Census Designated Places)'))
 
-        # --- v12.1: county race demographics ---------------------------------
+        # ── Demographic data ────────────────────────────────────────────
         if os.path.exists(county_race_path):
             county_race_data = pd.read_csv(county_race_path)
             county_race_data.columns = county_race_data.columns.str.strip()
             county_race_table_html = create_population_table(county_race_data)
-            race_pie_html = create_population_pie_chart(county_race_data)
-            hispanic_pie_html = create_hispanic_population_pie_chart(county_race_data)
+            race_pie_html          = create_population_pie_chart(county_race_data)
+            hispanic_pie_html      = create_hispanic_population_pie_chart(county_race_data)
 
-        # --- v12.1: age/sex demographics -------------------------------------
         if os.path.exists(age_sex_path):
             age_sex_data = pd.read_csv(age_sex_path)
             age_sex_data.columns = age_sex_data.columns.str.strip()
             age_sex_table_html = create_age_sex_population_table(age_sex_data)
-            age_pie_html = create_age_pie_chart(age_sex_data)
-            sex_pie_html = create_sex_pie_chart(age_sex_data)
+            age_pie_html       = create_age_pie_chart(age_sex_data)
+            sex_pie_html       = create_sex_pie_chart(age_sex_data)
 
         # ----------------------------------------------------------------
-        # Read the map iframes generated by import_data
+        # Assemble output HTML
         # ----------------------------------------------------------------
         def iframe(src, height='500px'):
             return (f'<div style="height:{height}; border-radius:8px; overflow:hidden; '
@@ -1386,48 +1589,40 @@ def visualize():
 
         section_style = ('margin-bottom:40px; background-color:#1b263b; padding:20px; '
                          'border-radius:8px; border:1px solid #415a77;')
-        h2_style = 'color:white; margin-top:0;'
+        h2_style  = 'color:white; margin-top:0;'
         col_style = 'flex:1; min-width:300px;'
 
-        # ----------------------------------------------------------------
-        # Assemble the final output HTML
-        # ----------------------------------------------------------------
         body_sections = ''
 
-        # -- Maps row (population + cancer incidence) --------------------
-        pop_exists    = os.path.exists('population_map.html')
-        cancer_exists = os.path.exists('cancer_map.html')
-        if pop_exists or cancer_exists:
-            body_sections += '<div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:40px;">'
-            if pop_exists:
-                body_sections += (f'<div style="{col_style}">'
-                                  f'<div style="{section_style}">'
-                                  f'<h2 style="{h2_style}">Population Distribution</h2>'
-                                  f'{iframe("/population_map.html")}'
-                                  f'</div></div>')
-            if cancer_exists:
-                body_sections += (f'<div style="{col_style}">'
-                                  f'<div style="{section_style}">'
-                                  f'<h2 style="{h2_style}">Cancer Incidence Heatmap</h2>'
-                                  f'{iframe("/cancer_map.html")}'
-                                  f'</div></div>')
-            body_sections += '</div>'
+        # -- Maps: render pairs side-by-side (pop | cancer per dataset) --
+        if generated_maps:
+            for i in range(0, len(generated_maps), 2):
+                pair = generated_maps[i:i + 2]
+                body_sections += '<div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:40px;">'
+                for fname, title in pair:
+                    if os.path.exists(fname):
+                        body_sections += (f'<div style="{col_style}">'
+                                          f'<div style="{section_style}">'
+                                          f'<h2 style="{h2_style}">{title}</h2>'
+                                          f'{iframe("/" + fname)}'
+                                          f'</div></div>')
+                body_sections += '</div>'
 
-        # -- Cancer data table (new from cancermaps_v12.0) ---------------
+        # -- Cancer data table -------------------------------------------
         if cancer_table_html:
             body_sections += (f'<div style="{section_style}">'
                               f'<h2 style="{h2_style}">Cancer Data Table</h2>'
                               f'{cancer_table_html}'
                               f'</div>')
 
-        # -- Comparative Plotly chart (new from cancermaps_v12.0) --------
+        # -- Comparative Plotly chart ------------------------------------
         if comparative_chart_html:
             body_sections += (f'<div style="{section_style}">'
                               f'<h2 style="{h2_style}">Interactive Comparative Cancer Trends</h2>'
                               f'{comparative_chart_html}'
                               f'</div>')
 
-        # -- Standalone chart files from import_data (cancer-specific only) --
+        # -- Standalone chart files from import_data ---------------------
         chart_files = [
             ('cancer_trends.html',       'Cancer Trends Over Time'),
             ('cancer_distribution.html', 'Cancer Type Distribution'),
@@ -1443,14 +1638,14 @@ def visualize():
                                   f'</div></div>')
             body_sections += '</div>'
 
-        # -- Per-city graph grid (new from cancermaps_v12.0) -------------
+        # -- Per-city graph grid -----------------------------------------
         if graph_table_html:
             body_sections += (f'<div style="{section_style}">'
                               f'<h2 style="{h2_style}">Individual Cancer Trends by City</h2>'
                               f'{graph_table_html}'
                               f'</div>')
 
-        # -- County race table + pie charts (new from cancermaps_v12.1) --
+        # -- County race table + pie charts ------------------------------
         if county_race_table_html:
             body_sections += (f'<div style="{section_style}">'
                               f'<h2 style="{h2_style}">Race Population by County</h2>'
@@ -1463,7 +1658,7 @@ def visualize():
                               f'{hispanic_pie_html}'
                               f'</div>')
 
-        # -- Age/sex table + pie charts (new from cancermaps_v12.1) ------
+        # -- Age/sex table + pie charts ----------------------------------
         if age_sex_table_html:
             body_sections += (f'<div style="{section_style}">'
                               f'<h2 style="{h2_style}">Population Data by Age and Sex</h2>'
