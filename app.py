@@ -410,6 +410,20 @@ landing_page_html = """
             color: #aaa;
             margin-top: 5px;
         }
+        .app-title {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #8a9bb5;
+            margin: 10px 0 5px 0;
+        }
+        .app-description {
+            font-size: 1rem;
+            color: #b0b8c8;
+            max-width: 680px;
+            margin: 12px auto 0 auto;
+            line-height: 1.7;
+            text-align: center;
+        }
         .nav-buttons {
             display: flex;
             justify-content: center;
@@ -501,7 +515,15 @@ landing_page_html = """
         
         <div class="logo-container">
             <img src="/OncoContour.png" alt="OncoContour Logo" class="logo">
+            <p class="app-title">OncoContour</p>
             <p class="tagline">Geographic Visualization of Cancer Statistics</p>
+            <p class="app-description">
+                OncoContour is a geospatial cancer analytics platform designed to help researchers,
+                clinicians, and public health professionals explore and visualize cancer incidence data
+                across geographic regions. By combining interactive heatmaps, demographic breakdowns,
+                and multi-year trend analysis, OncoContour transforms raw cancer statistics into
+                actionable, map-based insights.
+            </p>
         </div>
 
         <h2 class="section-title">Region Specific Cancer Mapping</h2>
@@ -517,7 +539,8 @@ landing_page_html = """
         <div id="visualization"></div>
         
         <div class="footer">
-            <p>© 2025 OncoContour - Geospatial Cancer Analytics</p>
+            <p>© <span id="footer-year"></span> OncoContour - Geospatial Cancer Analytics</p>
+            <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
         </div>
     </div>
 
@@ -752,7 +775,8 @@ Female,54344,66057,75425,72340,62843,75137,73676,46375,30832</div>
         <div id="visualization"></div>
         
         <div class="footer">
-            <p>© 2025 OncoContour - Geospatial Cancer Analytics</p>
+            <p>© <span id="footer-year"></span> OncoContour - Geospatial Cancer Analytics</p>
+            <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
         </div>
     </div>
 
@@ -1060,7 +1084,8 @@ about_page_html = """
         </div>
 
         <div class="footer">
-            <p>© 2025 OncoContour - Geospatial Cancer Analytics</p>
+            <p>© <span id="footer-year"></span> OncoContour - Geospatial Cancer Analytics</p>
+            <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
         </div>
     </div>
 </body>
@@ -1162,13 +1187,14 @@ user_guide_page_html = """
         <div class="guide-box">
             <p class="version"><strong>Version:</strong> 1.1</p>
             <p style="color: #c4c4d4; margin-bottom: 30px;">Click below to open the OncoContour User Guide.</p>
-            <a href="/OncoCountourUserGuide.pdf" target="_blank" class="download-link">
+            <a href="/OncoContourUserGuide.pdf" target="_blank" class="download-link">
                 &#8595; Open User Guide (PDF)
             </a>
         </div>
 
         <div class="footer">
-            <p>&#169; 2025 OncoContour - Geospatial Cancer Analytics</p>
+            <p>© <span id="footer-year"></span> OncoContour - Geospatial Cancer Analytics</p>
+            <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
         </div>
     </div>
 </body>
