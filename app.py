@@ -231,11 +231,11 @@ def create_population_pie_chart(county_race_data):
                   '#aec6cf','#b39ddb','#80cbc4']
 
         with plt.ioff():
-            fig, ax = plt.subplots(figsize=(12, 8))
+            fig, ax = plt.subplots(figsize=(6, 4))  # FIX: reduced from (12, 8)
             ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90,
                    colors=colors[:len(labels)],
                    wedgeprops={'edgecolor': 'black'},
-                   textprops={'fontsize': 14, 'color': 'white'})
+                   textprops={'fontsize': 10, 'color': 'white'})
             ax.axis('equal')
             fig.patch.set_facecolor('#1b263b')
             plt.tight_layout()
@@ -247,7 +247,7 @@ def create_population_pie_chart(county_race_data):
             buf.seek(0)
             image = base64.b64encode(buf.read()).decode('utf-8')
             return (f'<img src="data:image/png;base64,{image}" '
-                    f'style="width:100%; height:auto; max-width:1200px; margin:0 auto; display:block;">')
+                    f'style="width:100%; height:auto;">')  # FIX: removed max-width/margin/display
     except Exception as e:
         print(f"Race pie chart error: {e}")
         return ''
@@ -279,11 +279,11 @@ def create_hispanic_population_pie_chart(county_race_data):
         colors = ['#c2c2f0', '#8fbc8f']
 
         with plt.ioff():
-            fig, ax = plt.subplots(figsize=(12, 8))
+            fig, ax = plt.subplots(figsize=(6, 4))  # FIX: reduced from (12, 8)
             ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90,
                    colors=colors,
                    wedgeprops={'edgecolor': 'black'},
-                   textprops={'fontsize': 14, 'color': 'white'})
+                   textprops={'fontsize': 10, 'color': 'white'})
             ax.axis('equal')
             fig.patch.set_facecolor('#1b263b')
             plt.tight_layout()
@@ -295,7 +295,7 @@ def create_hispanic_population_pie_chart(county_race_data):
             buf.seek(0)
             image = base64.b64encode(buf.read()).decode('utf-8')
             return (f'<img src="data:image/png;base64,{image}" '
-                    f'style="width:100%; height:auto; max-width:1200px; margin:0 auto; display:block;">')
+                    f'style="width:100%; height:auto;">')  # FIX: removed max-width/margin/display
     except Exception as e:
         print(f"Hispanic pie chart error: {e}")
         return ''
@@ -312,10 +312,10 @@ def create_age_pie_chart(age_sex_data):
         total_by_age = age_sex_data[age_labels].sum()
 
         with plt.ioff():
-            fig, ax = plt.subplots(figsize=(12, 8))
+            fig, ax = plt.subplots(figsize=(6, 4))  # FIX: reduced from (12, 8)
             ax.pie(total_by_age, labels=age_labels, autopct='%1.1f%%', startangle=90,
                    colors=plt.cm.Pastel1(np.linspace(0, 1, len(age_labels))),
-                   textprops={'fontsize': 14, 'color': 'white'})
+                   textprops={'fontsize': 10, 'color': 'white'})
             ax.axis('equal')
             fig.patch.set_facecolor('#1b263b')
             plt.tight_layout()
@@ -327,7 +327,7 @@ def create_age_pie_chart(age_sex_data):
             buf.seek(0)
             image = base64.b64encode(buf.read()).decode('utf-8')
             return (f'<img src="data:image/png;base64,{image}" '
-                    f'style="width:100%; height:auto; max-width:1200px; margin:0 auto; display:block;">')
+                    f'style="width:100%; height:auto;">')  # FIX: removed max-width/margin/display
     except Exception as e:
         print(f"Age pie chart error: {e}")
         return ''
@@ -347,10 +347,10 @@ def create_sex_pie_chart(age_sex_data):
         colors = ['#66b3ff', '#ff9999']
 
         with plt.ioff():
-            fig, ax = plt.subplots(figsize=(12, 8))
+            fig, ax = plt.subplots(figsize=(6, 4))  # FIX: reduced from (12, 8)
             ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90,
-                   colors=colors, textprops={'fontsize': 14, 'color': 'white'})
-            ax.set_title('Population by Sex', fontsize=18, color='white')
+                   colors=colors, textprops={'fontsize': 10, 'color': 'white'})
+            ax.set_title('Population by Sex', fontsize=14, color='white')
             ax.axis('equal')
             fig.patch.set_facecolor('#1b263b')
             plt.tight_layout()
@@ -362,7 +362,7 @@ def create_sex_pie_chart(age_sex_data):
             buf.seek(0)
             image = base64.b64encode(buf.read()).decode('utf-8')
             return (f'<img src="data:image/png;base64,{image}" '
-                    f'style="width:100%; height:auto; max-width:1200px; margin:0 auto; display:block;">')
+                    f'style="width:100%; height:auto;">')  # FIX: removed max-width/margin/display
     except Exception as e:
         print(f"Sex pie chart error: {e}")
         return ''
@@ -1352,8 +1352,6 @@ def visualize():
 
     # ------------------------------------------------------------------
     # Helper: build a canonical cancer-type table for popup use.
-    # Uses dark-on-light styling so it renders correctly inside Folium's
-    # default white popup (not the dark app panels).
     # ------------------------------------------------------------------
     def _popup_cancer_table(df, city, cancer_types, population_data):
         location_data = df[df['City'] == city]
@@ -1376,8 +1374,7 @@ def visualize():
                 f"</tr></thead><tbody>{rows}</tbody></table>")
 
     # ------------------------------------------------------------------
-    # Population-only heatmap: pure density, NO markers.
-    # Intensity = log-normalised population.
+    # Population-only heatmap
     # ------------------------------------------------------------------
     def _build_population_map(city_coordinates, population_data, out_file):
         lats = [v[0] for v in city_coordinates.values()]
@@ -1400,8 +1397,7 @@ def visualize():
         m.save(out_file)
 
     # ------------------------------------------------------------------
-    # Cancer incidence heatmap: intensity = cases per 100 000 residents.
-    # Markers show cancer-type breakdown table + per-city trend chart.
+    # Cancer incidence heatmap
     # ------------------------------------------------------------------
     def _build_cancer_map(city_coordinates, population_data, df_cancer,
                           cancer_types, years, out_file):
@@ -1410,7 +1406,6 @@ def visualize():
         center = [sum(lats) / len(lats), sum(lngs) / len(lngs)]
         m = folium.Map(location=center, zoom_start=10)
 
-        # ── Heatmap layer ──────────────────────────────────────────────
         heat_data = []
         for city, coord in city_coordinates.items():
             row = df_cancer[df_cancer['City'] == city]
@@ -1427,7 +1422,6 @@ def visualize():
             normalised = [[h[0], h[1], h[2] / max_val] for h in heat_data]
             HeatMap(normalised, radius=55, blur=15, max_zoom=13).add_to(m)
 
-        # ── Markers with cancer table + trend chart ────────────────────
         for city, coord in city_coordinates.items():
             row = df_cancer[df_cancer['City'] == city]
             if row.empty:
@@ -1458,7 +1452,6 @@ def visualize():
                 'message': 'No data files found. Please upload at least one file.'
             })
 
-        # Run import_data to generate standalone chart files
         success = custom_cancer_map.generate_visualization(uploads_folder=UPLOAD_FOLDER)
         if not success:
             return jsonify({
@@ -1486,10 +1479,9 @@ def visualize():
         age_pie_html           = ''
         sex_pie_html           = ''
 
-        # Track which map files were actually generated this run
-        generated_maps = []   # list of (filename, title)
+        generated_maps = []
 
-        # ── City-coordinates cancer CSV (City, Population, Lat, Lng, ...) ─
+        # ── City-coordinates cancer CSV ─────────────────────────────────
         if os.path.exists(city_coords_cancer_path):
             df_cc = pd.read_csv(city_coords_cancer_path)
             df_cc.columns = df_cc.columns.str.strip()
@@ -1523,7 +1515,6 @@ def visualize():
                 if not years:
                     years = years_cc
 
-            # Build the two city-coords maps (always fresh)
             _build_population_map(city_coords_cc, pop_data_cc,
                                   'population_map_coords.html')
             _build_cancer_map(city_coords_cc, pop_data_cc, df_cc,
@@ -1534,7 +1525,7 @@ def visualize():
             generated_maps.append(('cancer_map_coords.html',
                                    'Cancer Incidence Heatmap (City Coordinates Data)'))
 
-        # ── Standard cancer CSV (City, State, ...) ─────────────────────
+        # ── Standard cancer CSV ─────────────────────────────────────────
         if os.path.exists(cancer_path):
             df = pd.read_csv(cancer_path)
             df.columns = df.columns.str.strip()
@@ -1578,7 +1569,6 @@ def visualize():
                 if not years:
                     years = years_std
 
-                # Build the two census-based maps (always fresh)
                 _build_population_map(city_coords_std, pop_data_std,
                                       'population_map_census.html')
                 _build_cancer_map(city_coords_std, pop_data_std, df,
@@ -1620,7 +1610,7 @@ def visualize():
 
         body_sections = ''
 
-        # -- Maps: render pairs side-by-side (pop | cancer per dataset) --
+        # -- Maps: render pairs side-by-side ----------------------------
         if generated_maps:
             for i in range(0, len(generated_maps), 2):
                 pair = generated_maps[i:i + 2]
@@ -1634,21 +1624,21 @@ def visualize():
                                           f'</div></div>')
                 body_sections += '</div>'
 
-        # -- Cancer data table -------------------------------------------
+        # -- Cancer data table ------------------------------------------
         if cancer_table_html:
             body_sections += (f'<div style="{section_style}">'
                               f'<h2 style="{h2_style}">Cancer Data Table</h2>'
                               f'{cancer_table_html}'
                               f'</div>')
 
-        # -- Comparative Plotly chart ------------------------------------
+        # -- Comparative Plotly chart -----------------------------------
         if comparative_chart_html:
             body_sections += (f'<div style="{section_style}">'
                               f'<h2 style="{h2_style}">Interactive Comparative Cancer Trends</h2>'
                               f'{comparative_chart_html}'
                               f'</div>')
 
-        # -- Standalone chart files from import_data ---------------------
+        # -- Standalone chart files from import_data --------------------
         chart_files = [
             ('cancer_trends.html',       'Cancer Trends Over Time'),
             ('cancer_distribution.html', 'Cancer Type Distribution'),
@@ -1664,37 +1654,47 @@ def visualize():
                                   f'</div></div>')
             body_sections += '</div>'
 
-        # -- Per-city graph grid -----------------------------------------
+        # -- Per-city graph grid ----------------------------------------
         if graph_table_html:
             body_sections += (f'<div style="{section_style}">'
                               f'<h2 style="{h2_style}">Individual Cancer Trends by City</h2>'
                               f'{graph_table_html}'
                               f'</div>')
 
-        # -- County race table + pie charts ------------------------------
+        # -- County race table ------------------------------------------
         if county_race_table_html:
             body_sections += (f'<div style="{section_style}">'
                               f'<h2 style="{h2_style}">Race Population by County</h2>'
                               f'{county_race_table_html}'
                               f'</div>')
+
+        # -- Race pie charts: side by side ------------------------------
+        # FIX: wrapped in flex row instead of stacked vertically
         if race_pie_html or hispanic_pie_html:
             body_sections += (f'<div style="{section_style}">'
                               f'<h2 style="{h2_style}">Race Proportions</h2>'
-                              f'{race_pie_html}'
-                              f'{hispanic_pie_html}'
+                              f'<div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">'
+                              f'<div style="flex:1; min-width:280px;">{race_pie_html}</div>'
+                              f'<div style="flex:1; min-width:280px;">{hispanic_pie_html}</div>'
+                              f'</div>'
                               f'</div>')
 
-        # -- Age/sex table + pie charts ----------------------------------
+        # -- Age/sex table ----------------------------------------------
         if age_sex_table_html:
             body_sections += (f'<div style="{section_style}">'
                               f'<h2 style="{h2_style}">Population Data by Age and Sex</h2>'
                               f'{age_sex_table_html}'
                               f'</div>')
+
+        # -- Age/sex pie charts: side by side ---------------------------
+        # FIX: wrapped in flex row instead of stacked vertically
         if age_pie_html or sex_pie_html:
             body_sections += (f'<div style="{section_style}">'
                               f'<h2 style="{h2_style}">Age and Sex Proportions</h2>'
-                              f'{age_pie_html}'
-                              f'{sex_pie_html}'
+                              f'<div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">'
+                              f'<div style="flex:1; min-width:280px;">{age_pie_html}</div>'
+                              f'<div style="flex:1; min-width:280px;">{sex_pie_html}</div>'
+                              f'</div>'
                               f'</div>')
 
         output_html = f"""<!DOCTYPE html>
